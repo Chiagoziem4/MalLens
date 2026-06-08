@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mallens-db
+    environment:
+      - POSTGRES_USER=mallens
+      - POSTGRES_PASSWORD=mallens_pass
+      - POSTGRES_DB=mallens_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mallens-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: mallens-redis
+    networks:
+      - mallens-network
+
+  api:
+    build: ./backend
+    container_name: mallens-api
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://mallens:mallens_pass@db:5432/mallens_db
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/app/uploads
+      - DEBUG=true
+      - SECRET_KEY=mallens-secret-key-replace-in-production
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/yara_rules:/app/yara_rules
+    depends_on:
+      - db
+      - redis
+    networks:
+      - mallens-network
+
+  frontend:
+    build: ./frontend
+    container_name: mallens-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - mallens-network
+
+networks:
+  mallens-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
