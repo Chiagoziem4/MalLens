@@ -1,33 +1,25 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-.env
-.venv
-env/
+*.pyc
+.venv/
 venv/
-build/
-dist/
-*.db
-backend/uploads/*
-!backend/uploads/.gitkeep
+*.egg-info/
 
 # Node
 node_modules/
-frontend/dist/
-frontend/build/
-.eslintcache
+dist/
+.vite/
 
-# Docker
-.docker/
-docker-compose.override.yml
+# Env
+.env
+backend/.env
+frontend/.env
 
-# IDE
+# Uploads / runtime data
+backend/uploads/
+*.log
+
+# Editor / OS
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# OS
 .DS_Store
-Thumbs.db
