@@ -45,7 +45,7 @@ class DynamicResultOut(BaseModel):
     process_logs: Optional[list[dict[str, Any]]] = None
     file_changes: Optional[list[dict[str, Any]]] = None
     registry_changes: Optional[list[dict[str, Any]]] = None
-    network_log: Optional[list[dict[str, Any]]] = None
+    network_log: Optional[list[dict[str, Any]] | dict[str, Any]] = None
     behavior_timeline: Optional[list[dict[str, Any]]] = None
     runtime_seconds: Optional[float] = None
     notes: Optional[str] = None

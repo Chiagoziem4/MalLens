@@ -7,17 +7,29 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models import Analysis, IOC
+from app.security import get_current_user
+from app.models import User
 from app.schemas import DynamicResultOut, FullReportResponse, IOCOut, ReportOut, StaticResultOut
 from app.services import report_generator
 
 router = APIRouter(prefix="/api", tags=["report"])
 
 
+def _ensure_owner(analysis: Analysis, user: User | None) -> None:
+    if user is not None and analysis.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+
 @router.get("/report/{analysis_id}", response_model=FullReportResponse)
-async def get_report(analysis_id: str, db: AsyncSession = Depends(get_db)):
+async def get_report(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
     analysis = await db.get(Analysis, analysis_id)
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
+    _ensure_owner(analysis, user)
 
     iocs_result = await db.execute(select(IOC).where(IOC.analysis_id == analysis_id))
     iocs = iocs_result.scalars().all()
@@ -38,11 +50,17 @@ async def get_report(analysis_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/report/{analysis_id}/export")
-async def export_report(analysis_id: str, format: str = "html", db: AsyncSession = Depends(get_db)):
+async def export_report(
+    analysis_id: str,
+    format: str = "html",
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
     """format = html | pdf | json"""
     analysis = await db.get(Analysis, analysis_id)
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
+    _ensure_owner(analysis, user)
     if analysis.report is None:
         raise HTTPException(status_code=409, detail="Report not generated yet")
 
@@ -90,10 +108,15 @@ async def export_report(analysis_id: str, format: str = "html", db: AsyncSession
 
 
 @router.delete("/analysis/{analysis_id}")
-async def delete_analysis(analysis_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_analysis(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
     analysis = await db.get(Analysis, analysis_id)
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
+    _ensure_owner(analysis, user)
 
     if os.path.exists(analysis.storage_path):
         os.remove(analysis.storage_path)
